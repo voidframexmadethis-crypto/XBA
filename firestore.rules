@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // --- Global Deny ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validation ---
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.credits is int && data.credits >= 0 &&
+             data.coins is int && data.coins >= 0 &&
+             (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 50)) &&
+             (!data.keys().hasAny(['outfitPrompt']) || (data.outfitPrompt is string && data.outfitPrompt.size() <= 500));
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.uid == request.auth.uid &&
+             data.points is int &&
+             (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 50)) &&
+             (!data.keys().hasAny(['wins']) || data.wins is int) &&
+             (!data.keys().hasAny(['losses']) || data.losses is int);
+    }
+
+    function isValidMatchResult(data) {
+      return data.userId == request.auth.uid &&
+             data.myScore is int &&
+             data.opponentScore is int &&
+             data.win is bool;
+    }
+
+    // --- Collection Rules ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) &&
+                    incoming().keys().hasAll(['uid', 'credits', 'coins']) &&
+                    incoming().keys().hasOnly(['uid', 'displayName', 'credits', 'coins', 'currentTeam', 'outfitPrompt', 'outfitImageUrl', 'stats', 'unlockedLocations', 'inventory', 'updatedAt']);
+      allow update: if isOwner(userId) && isValidUser(incoming()) &&
+                    incoming().uid == existing().uid &&
+                    incoming().keys().hasOnly(['uid', 'displayName', 'credits', 'coins', 'currentTeam', 'outfitPrompt', 'outfitImageUrl', 'stats', 'unlockedLocations', 'inventory', 'updatedAt']);
+    }
+
+    match /leaderboard/{userId} {
+      allow list: if true;
+      allow get: if true;
+      allow create: if isOwner(userId) && isValidLeaderboardEntry(incoming()) &&
+                    incoming().keys().hasAll(['uid', 'points']) &&
+                    incoming().keys().hasOnly(['uid', 'displayName', 'points', 'wins', 'losses', 'winPercentage', 'updatedAt']);
+      allow update: if isOwner(userId) && isValidLeaderboardEntry(incoming()) &&
+                    incoming().uid == existing().uid &&
+                    incoming().keys().hasOnly(['uid', 'displayName', 'points', 'wins', 'losses', 'winPercentage', 'updatedAt']);
+    }
+
+    match /results/{resultId} {
+      allow list: if isSignedIn(); // Users can see their history (filtered by UID)
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidMatchResult(incoming());
+      allow update: if false; // History is immutable
+      allow delete: if false;
+    }
+
+    match /matches/{matchId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    match /athletes/{athleteId} {
+      allow list: if true; // Scouting
+      allow get: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /contracts/{contractId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isSignedIn(); // Simplified for prototype
+      allow update: if isSignedIn();
+    }
+  }
+}

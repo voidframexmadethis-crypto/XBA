@@ -1,0 +1,6 @@
+{
+  "name": "XBA: X-Basketball Association",
+  "description": "The ultimate elite basketball league. Rise through the ranks, customize your gear with AI, and dominate the global leaderboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

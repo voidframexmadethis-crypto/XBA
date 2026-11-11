@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores player progress, currency, and customization.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique identifier." },
+        "displayName": { "type": "string", "maxLength": 50 },
+        "credits": { "type": "integer", "description": "In-game cash earned by playing." },
+        "coins": { "type": "integer", "description": "Premium currency." },
+        "currentTeam": { "type": "string", "description": "The team the player is currently drafted into." },
+        "outfitPrompt": { "type": "string", "description": "The AI prompt used to generate their current outfit.", "maxLength": 500 },
+        "outfitImageUrl": { "type": "string", "description": "The URL of the AI-generated outfit image." },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "dunks": { "type": "integer" },
+            "points": { "type": "integer" },
+            "gamesPlayed": { "type": "integer" },
+            "wins": { "type": "integer" },
+            "losses": { "type": "integer" }
+          }
+        },
+        "unlockedLocations": { "type": "array", "description": "List of locations unlocked in the world tour." },
+        "inventory": { "type": "array", "description": "List of items/jerseys owned." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "credits", "coins"]
+    },
+    "LeaderboardEntry": {
+      "title": "Leaderboard Entry",
+      "description": "Ranked data for competitive play.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "points": { "type": "integer" },
+        "wins": { "type": "integer" },
+        "losses": { "type": "integer" },
+        "winPercentage": { "type": "number" },
+        "matchesPlayed": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "points", "matchesPlayed"]
+    },
+    "MatchResult": {
+      "title": "Match Result",
+      "description": "Historical record of a completed basketball match.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "opponentName": { "type": "string" },
+        "myScore": { "type": "integer" },
+        "opponentScore": { "type": "integer" },
+        "win": { "type": "boolean" },
+        "locationId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "myScore", "opponentScore"]
+    },
+    "Match": {
+      "title": "Basketball Match",
+      "description": "Real-time state for a multiplayer basketball game.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "scoreA": { "type": "integer" },
+        "scoreB": { "type": "integer" },
+        "timeLeft": { "type": "integer" },
+        "ball": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "z": { "type": "number" },
+            "vx": { "type": "number" },
+            "vy": { "type": "number" },
+            "vz": { "type": "number" }
+          }
+        },
+        "players": {
+          "type": "object",
+          "description": "Map of userId to player state."
+        },
+        "locationId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Athlete": {
+      "title": "Athlete Profile",
+      "description": "Customizable player character with stats and appearance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "position": { "type": "string", "enum": ["PG", "SG", "SF", "PF", "C"] },
+        "heightCm": { "type": "integer" },
+        "weightKg": { "type": "integer" },
+        "wingspanCm": { "type": "integer" },
+        "appearance": {
+          "type": "object",
+          "properties": {
+            "skinTone": { "type": "string" },
+            "hairStyle": { "type": "string" },
+            "hairColor": { "type": "string" },
+            "jerseyNumber": { "type": "integer" }
+          }
+        },
+        "ratings": {
+          "type": "object",
+          "properties": {
+            "shooting": { "type": "integer" },
+            "finishing": { "type": "integer" },
+            "passing": { "type": "integer" },
+            "dribbling": { "type": "integer" },
+            "defense": { "type": "integer" },
+            "rebounding": { "type": "integer" },
+            "speed": { "type": "integer" },
+            "stamina": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "Contract": {
+      "title": "Player Contract",
+      "description": "Employment details for an athlete in a team.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "athleteId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "years": { "type": "integer" },
+        "salaryPerYear": { "type": "integer" },
+        "signedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and progress data."
+    },
+    "/leaderboard/{userId}": {
+      "schema": "LeaderboardEntry",
+      "description": "Public leaderboard data."
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Active multiplayer match data."
+    },
+    "/athletes/{athleteId}": {
+      "schema": "Athlete",
+      "description": "Persistent athlete characters."
+    },
+    "/contracts/{contractId}": {
+      "schema": "Contract",
+      "description": "Athlete-Team agreements."
+    },
+    "/results/{resultId}": {
+      "schema": "MatchResult",
+      "description": "Historical match records."
+    }
+  }
+}
